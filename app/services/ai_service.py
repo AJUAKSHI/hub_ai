@@ -53,3 +53,26 @@ def summarize_text(text: str) -> str:
     """
     result = get_ai_response(prompt)
     return result["reply"]
+
+async def chat_stream(messages: list, user_id: str = None):
+    """Stream AI response token by token using Server-Sent Events format"""
+    # Build message list
+    formatted_messages = [
+        {"role": "system", "content": "You are SmartHub AI, a helpful assistant."}
+    ]
+    for msg in messages:
+        formatted_messages.append({
+            "role": msg["role"] if isinstance(msg, dict) else msg.role,
+            "content": msg["content"] if isinstance(msg, dict) else msg.content
+        })
+    
+    stream = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=formatted_messages,
+        stream=True
+    )
+    
+    for chunk in stream:
+        token = chunk.choices[0].delta.content
+        if token:
+            yield token
